@@ -36,7 +36,7 @@ class Coverflow extends Component {
     super(props);
 
     this.state = {
-      current: this._center(),
+      current: this._center(this.props.children),
       move: 0,
       width: this.props.width || 'auto',
       height: this.props.height || 'auto'
@@ -45,26 +45,29 @@ class Coverflow extends Component {
 
   componentDidMount() {
     this.updateDimensions();
-    let length = React.Children.count(this.props.children);
-
-    TRANSITIONS.forEach(event => {
-      for (let i = 0; i < length; i++) {
-        var figureID = `figure_${i}`;
-        this.refs[figureID].addEventListener(event, HandleAnimationState.bind(this));
-      }
-    });
+    this._mountChildren(this.props.children);
     window.addEventListener('resize', this.updateDimensions.bind(this));
   }
 
-  componentWillUnmount() {
-    let length = React.Children.count(this.props.children);
+  componentWillReceiveProps(nextProps) {
+    if (this.props.children !== nextProps.children) {
+      this._unmountChildren(this.props.children);
+    }
+  }
 
-    TRANSITIONS.forEach(event => {
-      for (let i = 0; i < length; i++) {
-        var figureID = `figure_${i}`;
-        this.refs[figureID].removeEventListener(event, HandleAnimationState.bind(this));
-      }
-    });
+  componentDidUpdate(prevProps, prevState) {
+    if (this.props.children !== prevProps.children) {
+      this.updateDimensions();
+      this.setState({
+        current: this._center(this.props.children),
+        move: 0
+      });
+      this._mountChildren(this.props.children);
+    }
+  }
+
+  componentWillUnmount() {
+    this._unmountChildren(this.props.children);
     window.removeEventListener('resize', this.updateDimensions.bind(this));
   }
 
@@ -107,8 +110,8 @@ class Coverflow extends Component {
   /**
    * Private methods
    */
-  _center() {
-    let length = React.Children.count(this.props.children);
+  _center(children) {
+    let length = React.Children.count(children);
     return Math.floor(length / 2);
   }
 
@@ -116,7 +119,7 @@ class Coverflow extends Component {
     const {displayQuantityOfSide} = this.props;
     const {width} = this.state;
     let style = {};
-    let center = this._center();
+    let center = this._center(this.props.children);
     let baseWidth = width / (displayQuantityOfSide * 2 + 1);
     let length = React.Children.count(this.props.children);
     let offset = length % 2 === 0 ? -width/10 : 0;
@@ -160,7 +163,7 @@ class Coverflow extends Component {
       const {displayQuantityOfSide} = this.props;
       const {width} = this.state;
       let baseWidth = width / (displayQuantityOfSide * 2 + 1);
-      let distance = this._center() - index;
+      let distance = this._center(this.props.children) - index;
       let move = distance * baseWidth;
       this.setState({current: index, move: move});
     }
@@ -199,7 +202,7 @@ class Coverflow extends Component {
     const {width} = this.state;
     let current = this.state.current;
     let baseWidth = width / (displayQuantityOfSide * 2 + 1);
-    let distance = this._center() - (current - 1);
+    let distance = this._center(this.props.children) - (current - 1);
     let move = distance * baseWidth;
 
     if (current - 1 >= 0) {
@@ -213,7 +216,7 @@ class Coverflow extends Component {
     const {width} = this.state;
     let current = this.state.current;
     let baseWidth = width / (displayQuantityOfSide * 2 + 1);
-    let distance = this._center() - (current + 1);
+    let distance = this._center(this.props.children) - (current + 1);
     let move = distance * baseWidth;
 
     if (current + 1 < this.props.children.length) {
@@ -272,6 +275,28 @@ class Coverflow extends Component {
         func();
       }
     }
+  }
+
+  _mountChildren(children) {
+    let length = React.Children.count(children);
+
+    TRANSITIONS.forEach(event => {
+      for (let i = 0; i < length; i++) {
+        var figureID = `figure_${i}`;
+        this.refs[figureID].addEventListener(event, HandleAnimationState.bind(this));
+      }
+    });
+  }
+
+  _unmountChildren(children) {
+    let length = React.Children.count(children);
+
+    TRANSITIONS.forEach(event => {
+      for (let i = 0; i < length; i++) {
+        var figureID = `figure_${i}`;
+        this.refs[figureID].removeEventListener(event, HandleAnimationState.bind(this));
+      }
+    });
   }
 };
 
